@@ -1,22 +1,23 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ndef_record/ndef_record.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:nfc_manager/nfc_manager_ios.dart';
 import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
 
 void main() {
-  runApp(const NfcWriterApp());
+  runApp(const NfcApp());
 }
 
-class NfcWriterApp extends StatelessWidget {
-  const NfcWriterApp({super.key});
+class NfcApp extends StatelessWidget {
+  const NfcApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NFC Review Writer',
+      title: 'NFC',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
@@ -35,7 +36,8 @@ class WriterPage extends StatefulWidget {
 
 class _WriterPageState extends State<WriterPage> {
   final _urlController = TextEditingController();
-  String _status = 'Paste your Google Maps review link, then tap "Write to Card".';
+  String _status =
+      'Paste your Google Maps review link, then tap "Write to Card".';
   bool _busy = false;
 
   @override
@@ -108,6 +110,13 @@ class _WriterPageState extends State<WriterPage> {
       pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
       alertMessageIos: 'Hold your iPhone near the NFC card.',
       onDiscovered: (tag) async {
+        debugPrint('Card detected');
+        if (mounted) setState(() => _status = 'Card detected, writing...');
+        if (defaultTargetPlatform == TargetPlatform.iOS) {
+          await NfcManagerIos.instance.tagSessionSetAlertMessage(
+            alertMessage: 'Card detected ✅\nWriting, keep holding...',
+          );
+        }
         final ndef = Ndef.from(tag);
         String? error;
         if (ndef == null) {
@@ -115,7 +124,8 @@ class _WriterPageState extends State<WriterPage> {
         } else if (!ndef.isWritable) {
           error = 'This card is locked / read-only.';
         } else if (message.byteLength > ndef.maxSize) {
-          error = 'Link is too long for this card '
+          error =
+              'Link is too long for this card '
               '(${message.byteLength} of ${ndef.maxSize} bytes).';
         } else {
           try {
@@ -126,8 +136,9 @@ class _WriterPageState extends State<WriterPage> {
         }
 
         if (error == null) {
-          await NfcManager.instance
-              .stopSession(alertMessageIos: 'Saved to card ✅');
+          await NfcManager.instance.stopSession(
+            alertMessageIos: 'Saved to card ✅',
+          );
           _finish('Done! Scanning this card now opens:\n$url');
         } else {
           await NfcManager.instance.stopSession(errorMessageIos: error);
@@ -151,7 +162,7 @@ class _WriterPageState extends State<WriterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('NFC Review Writer')),
+      appBar: AppBar(title: const Text('NFC')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),

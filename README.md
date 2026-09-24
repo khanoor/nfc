@@ -1,4 +1,4 @@
-# NFC Review Writer
+# NFC
 
 A Flutter app that writes a link (e.g. a Google Maps review link) to an NFC card.
 Anyone who taps the card with their phone is prompted to open the link — no app needed to read it.
